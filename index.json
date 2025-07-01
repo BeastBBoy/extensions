@@ -7,9 +7,7 @@
     "accuracy": "high",
     "ratio": 0,
     "media": "sub",
-    "languages": [
-      "US"
-    ],
+    "languages": ["US"],
     "icon": "https://releases.moe/favicon.png",
     "update": "gh:hayase-app/extensions",
     "code": "gh:hayase-app/extensions/seadex"
@@ -22,41 +20,61 @@
     "accuracy": "high",
     "ratio": 0,
     "media": "sub",
-    "languages": [
-      "US"
-    ],
+    "languages": ["US"],
     "icon": "https://animetosho.org/inc/favicon.ico",
     "update": "gh:hayase-app/extensions",
     "code": "gh:hayase-app/extensions/animetosho"
   },
   {
-    "name": "AnimeTosho",
+    "name": "AnimeTosho NZB",
     "id": "animetosho-nzb",
     "version": "0.0.2",
     "type": "nzb",
     "accuracy": "high",
     "ratio": 0,
     "media": "sub",
-    "languages": [
-      "US"
-    ],
+    "languages": ["US"],
     "icon": "https://animetosho.org/inc/favicon.ico",
     "update": "gh:hayase-app/extensions",
     "code": "gh:hayase-app/extensions/animetosho-nzb"
   },
   {
-    "id": "sukebei",
     "name": "Sukebei",
-    "entry": "sukebei.js"
+    "id": "sukebei",
+    "version": "1.0.0",
+    "type": "torrent",
+    "accuracy": "high",
+    "ratio": 0,
+    "media": "sub",
+    "languages": ["JP"],
+    "icon": "https://nyaa.si/static/favicon.png",
+    "update": "gh:BeastBBoy/extensions",
+    "code": "gh:BeastBBoy/extensions/sukebei"
   },
   {
+    "name": "Nyaa",
     "id": "nyaapi",
-    "name": "Nyaapi",
-    "entry": "nyaa.js"
+    "version": "1.0.0",
+    "type": "torrent",
+    "accuracy": "high",
+    "ratio": 0,
+    "media": "sub",
+    "languages": ["JP"],
+    "icon": "https://nyaa.si/static/favicon.png",
+    "update": "gh:BeastBBoy/extensions",
+    "code": "gh:BeastBBoy/extensions/nyaa"
   },
   {
-    "id": "1337x",
     "name": "1337x",
-    "entry": "1337x.js"
+    "id": "1337x",
+    "version": "1.0.0",
+    "type": "torrent",
+    "accuracy": "medium",
+    "ratio": 0,
+    "media": "dub",
+    "languages": ["EN"],
+    "icon": "https://1337x.to/favicon.ico",
+    "update": "gh:BeastBBoy/extensions",
+    "code": "gh:BeastBBoy/extensions/1337x"
   }
 ]
