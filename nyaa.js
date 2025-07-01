@@ -3,7 +3,7 @@ import AbstractSource from './abstract.js';
 export default new class Nyaa extends AbstractSource {
   // Configuration
   config = {
-    baseUrl: 'https://corsproxy.io/?https://nyaa.si',
+    baseUrl: 'https://nyaa.si',
     timeout: 10000, // 10 seconds
     retries: 3
   }
@@ -16,15 +16,15 @@ export default new class Nyaa extends AbstractSource {
     while (attempts < this.config.retries) {
       try {
         const query = this.buildQuery(titles[0], episode);
-        const url = `https://corsproxy.io/?${this.config.baseUrl}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`;
-        
+        const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${this.config.baseUrl}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`)}`;
+
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), this.config.timeout);
 
-        const response = await fetch(url, {
+        const response = await fetch(proxiedUrl, {
           signal: controller.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0',
             'Accept': 'text/html'
           }
         });
@@ -55,7 +55,8 @@ export default new class Nyaa extends AbstractSource {
   }
 
   parseResults(html) {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
     const rows = Array.from(doc.querySelectorAll('tbody tr'));
 
     return rows.map(row => {
@@ -71,7 +72,7 @@ export default new class Nyaa extends AbstractSource {
         downloads: 0,
         accuracy: 'high'
       };
-    }).filter(t => t.link); // Remove invalid entries
+    }).filter(t => t.link); // Filter out invalid ones
   }
 
   batch = this.single;
@@ -79,10 +80,13 @@ export default new class Nyaa extends AbstractSource {
 
   async test() {
     try {
-      const response = await fetch(this.config.baseUrl, { method: 'HEAD' });
+      const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(this.config.baseUrl)}`, {
+        method: 'HEAD'
+      });
       return response.ok;
     } catch {
       return false;
     }
   }
 }();
+
