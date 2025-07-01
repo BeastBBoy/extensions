@@ -1,92 +1,47 @@
-import AbstractSource from './abstract.js';
+import AbstractSource from './abstract.js'
 
 export default new class Nyaa extends AbstractSource {
-  // Configuration
-  config = {
-    baseUrl: 'https://nyaa.si',
-    timeout: 10000, // 10 seconds
-    retries: 3
-  }
+  url = atob('aHR0cHM6Ly9ueWFhLnNp')
 
   /** @type {import('./').SearchFunction} */
-  async single({ titles, episode }) {
-    if (!titles?.length) return [];
+  async single ({ anilistId, titles, episodeCount }) {
+    if (!anilistId) throw new Error('No anilistId provided')
+    if (!titles?.length) throw new Error('No titles provided')
+    const res = await fetch(`${this.url}?page=1&perPage=1&filter=alID%3D%22${anilistId}%22&skipTotal=1&expand=trs`)
 
-    let attempts = 0;
-    while (attempts < this.config.retries) {
-      try {
-        const query = this.buildQuery(titles[0], episode);
-        const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${this.config.baseUrl}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`)}`;
+    /** @type {import('./types').Nyaa} */
+    const { items } = await res.json()
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), this.config.timeout);
+    if (!items[0]?.expand?.trs?.length) return []
 
-        const response = await fetch(proxiedUrl, {
-          signal: controller.signal,
-          headers: {
-            'User-Agent': 'Mozilla/5.0',
-            'Accept': 'text/html'
-          }
-        });
+    const { trs } = items[0].expand
 
-        clearTimeout(timeout);
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        return this.parseResults(await response.text());
-
-      } catch (error) {
-        attempts++;
-        if (attempts >= this.config.retries) {
-          console.error(`[Nyaa] Failed after ${this.config.retries} attempts:`, error);
-          return [];
-        }
-        await new Promise(r => setTimeout(r, 2000 * attempts)); // Exponential backoff
-      }
-    }
-    return [];
-  }
-
-  buildQuery(title, episode) {
-    const cleanTitle = title.replace(/[^\w\s-]/g, ' ').trim();
-    let query = encodeURIComponent(cleanTitle);
-    if (episode) query += `+${episode.toString().padStart(2, '0')}`;
-    return query;
-  }
-
-  parseResults(html) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const rows = Array.from(doc.querySelectorAll('tbody tr'));
-
-    return rows.map(row => {
-      const titleCell = row.querySelector('td[colspan="2"] a:last-child');
-      const magnetLink = row.querySelector('a[href^="magnet:"]');
-      const [seeders, leechers] = Array.from(row.querySelectorAll('td.text-center')).slice(-3, -1);
-
+    return trs.filter(({ infoHash, files }) => {
+      if (infoHash === '<redacted>') return false
+      if (episodeCount && episodeCount !== 1 && files.length === 1) return false // skip sigle file spam for now
+      return true
+    }).map(torrent => {
       return {
-        title: titleCell?.textContent.trim() || 'Unknown',
-        link: magnetLink?.href || '',
-        seeders: parseInt(seeders?.textContent || '0'),
-        leechers: parseInt(leechers?.textContent || '0'),
+        hash: torrent.infoHash,
+        link: torrent.infoHash,
+        title: torrent.files.length === 1 ? torrent.files[0].name : `[${torrent.releaseGroup}] ${titles[0]} ${torrent.dualAudio ? 'Dual Audio' : ''}`,
+        size: torrent.files.reduce((prev, curr) => prev + curr.length, 0),
+        type: torrent.isBest ? 'best' : 'alt',
+        date: new Date(torrent.created),
+        seeders: 0,
+        leechers: 0,
         downloads: 0,
         accuracy: 'high'
-      };
-    }).filter(t => t.link); // Filter out invalid ones
+      }
+    })
   }
 
-  batch = this.single;
-  movie = this.single;
+  batch = this.single
+  movie = this.single
 
-  async test() {
-    try {
-      const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(this.config.baseUrl)}`, {
-        method: 'HEAD'
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
+  async test () {
+    const res = await fetch(this.url)
+    return res.ok
   }
-}();
+}()
 
