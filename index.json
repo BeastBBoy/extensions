@@ -46,7 +46,7 @@
     "accuracy": "high",
     "ratio": 0,
     "media": "sub",
-    "languages": ["JP"],
+    "languages": ["US"],
     "icon": "https://nyaa.si/static/favicon.png",
     "update": "gh:BeastBBoy/extensions",
     "code": "gh:BeastBBoy/extensions/sukebei"
@@ -59,7 +59,7 @@
     "accuracy": "high",
     "ratio": 0,
     "media": "sub",
-    "languages": ["JP"],
+    "languages": ["US"],
     "icon": "https://nyaa.si/static/favicon.png",
     "update": "gh:BeastBBoy/extensions",
     "code": "gh:BeastBBoy/extensions/nyaa"
@@ -72,7 +72,7 @@
     "accuracy": "medium",
     "ratio": 0,
     "media": "dub",
-    "languages": ["EN"],
+    "languages": ["US"],
     "icon": "https://1337x.to/favicon.ico",
     "update": "gh:BeastBBoy/extensions",
     "code": "gh:BeastBBoy/extensions/1337x"
