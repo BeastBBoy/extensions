@@ -39,3 +39,24 @@ export interface Seadex {
     trs: string[]
   }[]
 }
+
+export interface SearchInput {
+  anilistId?: number;
+  titles: string[];
+  episodeCount?: number;
+  resolution?: number;
+}
+
+export interface TorrentResult {
+  title: string;
+  link: string;
+  hash: string;
+  size: number;
+  seeders: number;
+  leechers: number;
+  date: Date;
+  downloads?: number;
+  verified?: boolean;
+  accuracy?: 'high' | 'medium' | 'low';
+  type?: 'batch' | 'best' | 'alt';
+}

@@ -1,4 +1,4 @@
-import AbstractExtension from "./abstract";
+import AbstractExtension from "./abstract.js";
 
 export default class NyaapiExtension extends AbstractExtension {
   constructor() {
@@ -21,13 +21,12 @@ export default class NyaapiExtension extends AbstractExtension {
 
     return data.results.map(item => ({
       title: item.name,
-      link: item.link,
-      download: item.torrent,
-      magnet: item.magnet,
-      seeds: item.seeders,
-      peers: item.leechers,
-      size: item.size,
-      time: new Date(item.pubDate).getTime(),
+      link: item.magnet,
+      hash: item.infoHash || "",
+      size: item.size_bytes || 0,
+      seeders: item.seeders,
+      leechers: item.leechers,
+      date: new Date(item.pubDate),
     }));
   }
 

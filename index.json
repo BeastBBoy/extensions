@@ -43,5 +43,20 @@
     "icon": "https://animetosho.org/inc/favicon.ico",
     "update": "gh:hayase-app/extensions",
     "code": "gh:hayase-app/extensions/animetosho-nzb"
+  },
+  {
+    "id": "sukebei",
+    "name": "Sukebei",
+    "entry": "sukebei.js"
+  },
+  {
+    "id": "nyaapi",
+    "name": "Nyaapi",
+    "entry": "nyaa.js"
+  },
+  {
+    "id": "1337x",
+    "name": "1337x",
+    "entry": "1337x.js"
   }
 ]

@@ -1,17 +1,14 @@
 import AbstractSource from './abstract.js';
 
 export default new class sukebei extends AbstractSource {
-
   url = atob('aHR0cHM6Ly9zdWtlYmVpLm55YWEuc2kv');
 
-  /** @type {import('./').SearchFunction} */
   async single({ anilistId, titles, episodeCount }) {
     if (!anilistId) throw new Error('No anilistId provided');
     if (!titles?.length) throw new Error('No titles provided');
 
     const res = await fetch(`${this.url}?f=0&c=1_0&q=${titles[0]}&p=1`);
     const html = await res.text();
-
     const items = html.match(/<tr class="(default|success)"[\s\S]+?<\/tr>/g) || [];
 
     return items.map(item => {
@@ -20,7 +17,6 @@ export default new class sukebei extends AbstractSource {
 
       const magnetMatch = item.match(/magnet:\?xt=urn:btih:([a-f0-9]{40})/);
       const infoHash = magnetMatch ? magnetMatch[1] : 'Unknown Hash';
-
       const magnetLink = magnetMatch
         ? `magnet:?xt=urn:btih:${infoHash}&tr=http%3A%2F%2Fopen.nyaatorrents.info%3A6544%2Fannounce&dn=${encodeURIComponent(title)}`
         : 'Unknown Magnet Link';
@@ -30,12 +26,11 @@ export default new class sukebei extends AbstractSource {
       if (sizeMatch) {
         const value = parseFloat(sizeMatch[1]);
         const unit = sizeMatch[2];
-
-        if (unit === 'GiB' || unit === 'GB') size = value * 1073741824;
-        else if (unit === 'MiB' || unit === 'MB') size = value * 1048576;
+        size = unit.includes('GiB') || unit.includes('GB') ? value * 1073741824 :
+               unit.includes('MiB') || unit.includes('MB') ? value * 1048576 : 0;
       }
 
-      const statsMatch = item.match(/<td class="text-center"[^>]*>(\d+)<\/td>[^<]*<td class="text-center"[^>]*>(\d+)<\/td>[^<]*<td class="text-center">(\d+)<\/td>/);
+      const statsMatch = item.match(/<td class="text-center"[^>]*>(\d+)<\/td>[^<]*<td class="text-center"[^>]*>(\d+)<\/td>/);
       const seeders = statsMatch ? parseInt(statsMatch[1], 10) : 0;
       const leechers = statsMatch ? parseInt(statsMatch[2], 10) : 0;
 
@@ -50,22 +45,14 @@ export default new class sukebei extends AbstractSource {
         seeders,
         leechers,
         date,
-        accuracy: "high" // ✅ fixed from `high` to string
+        accuracy: "high"
       };
     });
   }
 
-  /** @type {import('./types.js').SearchFunction} */
-  async batch({ anilistId, titles, episodeCount }) {
-    return this.single({ anilistId, titles, episodeCount });
-  }
+  batch = this.single;
+  movie = this.single;
 
-  /** @type {import('./types.js').SearchFunction} */
-  async movie({ anilistId, titles }) {
-    return this.single({ anilistId, titles, episodeCount: 1 });
-  }
-
-  /** Extension test function */
   async test() {
     try {
       const res = await fetch(this.url);
