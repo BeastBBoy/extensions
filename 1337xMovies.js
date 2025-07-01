@@ -60,9 +60,11 @@ export default class X1337xMovies {
     }
   }
 
-  test() {
-    return Promise.resolve(true);
-  }
+ test() {
+  return fetch("https://corsproxy.io/?https://1337x.to")
+    .then(res => res.ok)
+    .catch(() => false);
+   }
 }
 
 function parseSize(text) {
