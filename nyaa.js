@@ -55,5 +55,6 @@ function parseSize(val, unit) {
   const units = { KiB: 1024, MiB: 1048576, GiB: 1073741824, KB: 1e3, MB: 1e6, GB: 1e9 };
   return size * (units[unit] || 1);
 }
+export default new Nyaa();
 
 
