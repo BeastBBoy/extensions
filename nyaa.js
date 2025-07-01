@@ -3,7 +3,7 @@ import AbstractSource from './abstract.js';
 export default new class Nyaa extends AbstractSource {
   // Configuration
   config = {
-    baseUrl: 'https://nyaa.si',
+    baseUrl: 'https://corsproxy.io/?https://nyaa.si',
     timeout: 10000, // 10 seconds
     retries: 3
   }
@@ -16,7 +16,7 @@ export default new class Nyaa extends AbstractSource {
     while (attempts < this.config.retries) {
       try {
         const query = this.buildQuery(titles[0], episode);
-        const url = `${this.config.baseUrl}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`;
+        const url = `https://corsproxy.io/?${this.config.baseUrl}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`;
         
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), this.config.timeout);
