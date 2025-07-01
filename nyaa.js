@@ -34,7 +34,8 @@ export default class NyaapiExtension extends AbstractExtension {
     return item;
   }
 
-  async test() {
-    return true;
+  async test () {
+    const res = await fetch(this.url)
+    return res.ok
   }
 }
