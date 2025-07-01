@@ -53,7 +53,7 @@
   },
   {
     "name": "Nyaa",
-    "id": "nyaapi",
+    "id": "nyaa",
     "version": "1.0.0",
     "type": "torrent",
     "accuracy": "high",
