@@ -1,56 +1,77 @@
 import AbstractSource from './abstract.js';
 
 export default new class Nyaa extends AbstractSource {
-  url = 'https://nyaa.si' // Plain text URL (no need for Base64 here)
-  
-  /** @type {import('./').SearchFunction} */
-  async single({ anilistId, titles, episode }) {
-    if (!titles?.length) return [];
-    
-    try {
-      // Build search query with episode if specified
-      const query = episode 
-        ? `${encodeURIComponent(titles[0])}+${episode.toString().padStart(2, '0')}`
-        : encodeURIComponent(titles[0]);
-      
-      const searchUrl = `${this.url}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`;
-      
-      const res = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': 'HayaseApp/1.0',
-          'Accept': 'text/html'
-        }
-      });
-      
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      return this.parseHtml(await res.text());
-      
-    } catch (error) {
-      console.error('[Nyaa] Search failed:', error);
-      return []; // Always return array even on error
-    }
+  // Configuration
+  config = {
+    baseUrl: 'https://nyaa.si',
+    timeout: 10000, // 10 seconds
+    retries: 3
   }
 
-  parseHtml(html) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const rows = doc.querySelectorAll('tr.default, tr.success');
-    
-    return Array.from(rows).map(row => {
-      const titleLink = row.querySelector('td[colspan="2"] a:last-child');
+  /** @type {import('./').SearchFunction} */
+  async single({ titles, episode }) {
+    if (!titles?.length) return [];
+
+    let attempts = 0;
+    while (attempts < this.config.retries) {
+      try {
+        const query = this.buildQuery(titles[0], episode);
+        const url = `${this.config.baseUrl}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`;
+        
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), this.config.timeout);
+
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html'
+          }
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        return this.parseResults(await response.text());
+
+      } catch (error) {
+        attempts++;
+        if (attempts >= this.config.retries) {
+          console.error(`[Nyaa] Failed after ${this.config.retries} attempts:`, error);
+          return [];
+        }
+        await new Promise(r => setTimeout(r, 2000 * attempts)); // Exponential backoff
+      }
+    }
+    return [];
+  }
+
+  buildQuery(title, episode) {
+    const cleanTitle = title.replace(/[^\w\s-]/g, ' ').trim();
+    let query = encodeURIComponent(cleanTitle);
+    if (episode) query += `+${episode.toString().padStart(2, '0')}`;
+    return query;
+  }
+
+  parseResults(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const rows = Array.from(doc.querySelectorAll('tbody tr'));
+
+    return rows.map(row => {
+      const titleCell = row.querySelector('td[colspan="2"] a:last-child');
       const magnetLink = row.querySelector('a[href^="magnet:"]');
       const [seeders, leechers] = Array.from(row.querySelectorAll('td.text-center')).slice(-3, -1);
-      
+
       return {
-        title: titleLink?.textContent.trim() || 'Unknown',
+        title: titleCell?.textContent.trim() || 'Unknown',
         link: magnetLink?.href || '',
         seeders: parseInt(seeders?.textContent || '0'),
         leechers: parseInt(leechers?.textContent || '0'),
         downloads: 0,
         accuracy: 'high'
       };
-    }).filter(t => t.link); // Filter out entries without magnet links
+    }).filter(t => t.link); // Remove invalid entries
   }
 
   batch = this.single;
@@ -58,8 +79,8 @@ export default new class Nyaa extends AbstractSource {
 
   async test() {
     try {
-      const res = await fetch(this.url, { method: 'HEAD' });
-      return res.ok;
+      const response = await fetch(this.config.baseUrl, { method: 'HEAD' });
+      return response.ok;
     } catch {
       return false;
     }
