@@ -53,6 +53,6 @@ export default new class Nyaa extends AbstractSource {
     const res = await fetch(this.url);
     return res.ok;
   }
-}();
+}()
 
 
