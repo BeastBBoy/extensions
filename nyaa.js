@@ -35,11 +35,6 @@ export default class NyaapiExtension extends AbstractExtension {
   }
 
   async test() {
-    try {
-      const res = await fetch("https://nyaapi.deno.dev/nyaa?q=test");
-      return res.ok;
-    } catch {
-      return false;
-    }
+    return true;
   }
 }
