@@ -1,51 +1,42 @@
 import AbstractSource from './abstract.js';
 
-export default new class sukebei extends AbstractSource {
-  url = atob('aHR0cHM6Ly9zdWtlYmVpLm55YWEuc2kv');
+export default new class Sukebei extends AbstractSource {
+  url = 'https://corsproxy.io/?https://sukebei.nyaa.si';
 
+  /** @type {import('./').SearchFunction} */
   async single({ anilistId, titles, episodeCount }) {
     if (!anilistId) throw new Error('No anilistId provided');
     if (!titles?.length) throw new Error('No titles provided');
 
-    const res = await fetch(`${this.url}?f=0&c=1_0&q=${titles[0]}&p=1`);
+    const res = await fetch(`${this.url}/?f=0&c=1_0&q=${encodeURIComponent(titles[0])}&p=1`);
     const html = await res.text();
-    const items = html.match(/<tr class="(default|success)"[\s\S]+?<\/tr>/g) || [];
 
-    return items.map(item => {
-      const titleMatch = item.match(/title="([^"]+)">([^<]+)<\/a>/);
-      const title = titleMatch ? titleMatch[2] : 'Unknown Title';
+    const rows = html.match(/<tr class="(default|success)"[\s\S]+?<\/tr>/g) || [];
 
-      const magnetMatch = item.match(/magnet:\?xt=urn:btih:([a-f0-9]{40})/);
-      const infoHash = magnetMatch ? magnetMatch[1] : 'Unknown Hash';
-      const magnetLink = magnetMatch
-        ? `magnet:?xt=urn:btih:${infoHash}&tr=http%3A%2F%2Fopen.nyaatorrents.info%3A6544%2Fannounce&dn=${encodeURIComponent(title)}`
-        : 'Unknown Magnet Link';
+    return rows.map(row => {
+      const title = row.match(/title="[^"]+">([^<]+)<\/a>/)?.[1] ?? 'Unknown';
+      const infoHash = row.match(/magnet:\?xt=urn:btih:([a-f0-9]{40})/)?.[1] ?? '';
+      const magnet = `magnet:?xt=urn:btih:${infoHash}&tr=http%3A%2F%2Fopen.nyaatorrents.info%3A6544%2Fannounce&dn=${encodeURIComponent(title)}`;
 
-      const sizeMatch = item.match(/<td class="text-center">([\d\.]+) ([MGiB]+)<\/td>/);
-      let size = 0;
-      if (sizeMatch) {
-        const value = parseFloat(sizeMatch[1]);
-        const unit = sizeMatch[2];
-        size = unit.includes('GiB') || unit.includes('GB') ? value * 1073741824 :
-               unit.includes('MiB') || unit.includes('MB') ? value * 1048576 : 0;
-      }
+      const sizeMatch = row.match(/<td class="text-center">([\d.]+) ([MGK]i?B)<\/td>/);
+      const size = sizeMatch ? parseSize(sizeMatch[1], sizeMatch[2]) : 0;
 
-      const statsMatch = item.match(/<td class="text-center"[^>]*>(\d+)<\/td>[^<]*<td class="text-center"[^>]*>(\d+)<\/td>/);
-      const seeders = statsMatch ? parseInt(statsMatch[1], 10) : 0;
-      const leechers = statsMatch ? parseInt(statsMatch[2], 10) : 0;
+      const [seeders, leechers] = row.match(/<td class="text-center">(\d+)<\/td>/g)?.slice(-3, -1).map(n => parseInt(n.replace(/\D/g, ''))) || [0, 0];
 
-      const dateMatch = item.match(/data-timestamp="(\d+)">([^<]+)<\/td>/);
+      const dateMatch = row.match(/data-timestamp="(\d+)"/);
       const date = dateMatch ? new Date(parseInt(dateMatch[1], 10) * 1000) : new Date();
 
       return {
         title,
-        link: magnetLink,
+        link: magnet,
         hash: infoHash,
         size,
+        type: 'alt',
+        date,
         seeders,
         leechers,
-        date,
-        accuracy: "high"
+        downloads: 0,
+        accuracy: 'medium'
       };
     });
   }
@@ -54,11 +45,14 @@ export default new class sukebei extends AbstractSource {
   movie = this.single;
 
   async test() {
-    try {
-      const res = await fetch(this.url);
-      return res.ok;
-    } catch {
-      return false;
-    }
+    const res = await fetch(this.url);
+    return res.ok;
   }
 }();
+
+function parseSize(val, unit) {
+  const size = parseFloat(val.replace(",", ""));
+  const units = { KiB: 1024, MiB: 1048576, GiB: 1073741824, KB: 1e3, MB: 1e6, GB: 1e9 };
+  return size * (units[unit] || 1);
+}
+
