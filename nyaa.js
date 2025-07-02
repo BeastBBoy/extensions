@@ -64,6 +64,7 @@ parse(html) {
       accuracy: 'high'
     })
   }
+console.log('[Nyaa] Parsed results:', results.length)
 
   return results
 }
