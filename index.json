@@ -76,7 +76,7 @@
   {
   "id": "PirateBay",
   "name": "piratebay",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "type": "torrent",
   "accuracy": "medium",
   "media": "both",
