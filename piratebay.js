@@ -1,53 +1,64 @@
 import AbstractSource from './abstract.js'
 
 export default new class PirateBay extends AbstractSource {
-  base = 'https://torrent-exonoob-in.vercel.app/api'
+  url = 'https://torrent-search-api-livid.vercel.app/api/piratebay'
 
   /** @type {import('./').SearchFunction} */
   async single({ titles, episode }) {
     if (!titles?.length) return []
-    const q = titles[0].replace(/[^\w\s-]/g, ' ').trim()
-    const url = `${this.base}/piratebay/${encodeURIComponent(q)}`
-    const res = await fetch(url)
-    if (!res.ok) return []
+
+    const query = this.buildQuery(titles[0], episode)
+    const res = await fetch(`${this.url}/${query}`)
     const data = await res.json()
+
     return this.map(data)
   }
 
+  /** @type {import('./').SearchFunction} */
   batch = this.single
   movie = this.single
 
-  map(items) {
-    return items.map(item => ({
-      title: item.Name,
-      link: item.Magnet,
-      hash: item.Magnet.match(/btih:([A-Fa-f0-9]+)/)?.[1] || '',
-      seeders: Number(item.Seeders) || 0,
-      leechers: Number(item.Leechers) || 0,
-      downloads: Number(item.Downloads) || 0,
-      size: this.parseSize(item.Size),
-      date: new Date(item.DateUploaded),
-      verified: false,
-      type: 'alt',
-      accuracy: 'medium'
-    })).filter(r => r.hash)
+  buildQuery(title, episode) {
+    const clean = title.replace(/[^\w\s-]/g, ' ').trim()
+    let query = clean
+    if (episode) query += ` ${episode.toString().padStart(2, '0')}`
+    return encodeURIComponent(query)
   }
 
-  parseSize(text) {
-    const [val, unit] = text.split(' ')
-    const num = parseFloat(val)
+  /** @param {Array} torrents */
+  map(torrents) {
+    return torrents.map(t => {
+      const hashMatch = t.magnet.match(/btih:([a-fA-F0-9]+)/)
+      return {
+        title: t.title || 'Unknown',
+        link: t.magnet,
+        hash: hashMatch?.[1] || '',
+        seeders: parseInt(t.seeds || '0'),
+        leechers: parseInt(t.peers || '0'),
+        downloads: 0,
+        accuracy: 'medium',
+        size: this.parseSize(t.size),
+        date: new Date(),
+        verified: false,
+        type: 'alt'
+      }
+    }).filter(r => r.hash)
+  }
+
+  parseSize(sizeStr) {
+    const [num, unit] = sizeStr.split(' ')
+    const n = parseFloat(num)
     switch ((unit || '').toUpperCase()) {
-      case 'KB': return num * 1024
-      case 'MB': return num * 1024 ** 2
-      case 'GB': return num * 1024 ** 3
-      case 'TB': return num * 1024 ** 4
+      case 'MB': return n * 1024 * 1024
+      case 'GB': return n * 1024 * 1024 * 1024
+      case 'KB': return n * 1024
       default: return 0
     }
   }
 
   async test() {
     try {
-      const res = await fetch(`${this.base}/piratebay/test`)
+      const res = await fetch(`${this.url}/naruto`)
       return res.ok
     } catch {
       return false
