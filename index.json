@@ -72,6 +72,21 @@
   "icon": "https://1337x.to/favicon.ico",
   "update": "gh:BeastBBoy/extensions",
   "code": "gh:BeastBBoy/extensions/1337x"
+},
+  {
+  "id": "PirateBay",
+  "name": "piratebay",
+  "version": "0.0.1",
+  "type": "torrent",
+  "accuracy": "medium",
+  "media": "both",
+  "languages": [
+    "US"
+  ],
+  "description": "Fetches torrents from The Pirate Bay via Torrents-API",
+  "icon": "https://upload.wikimedia.org/wikipedia/en/3/36/The_Pirate_Bay_logo.svg",
+  "update": "gh:BeastBBoy/extensions",
+  "code": "gh:BeastBBoy/extensions/piratebay"
 }
 
 ]
