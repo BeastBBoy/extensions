@@ -1,47 +1,85 @@
 import AbstractSource from './abstract.js'
 
 export default new class Nyaa extends AbstractSource {
-  url = atob('aHR0cHM6Ly9ueWFhLnNp')
+  url = 'https://nyaa.si'
 
   /** @type {import('./').SearchFunction} */
-  async single ({ anilistId, titles, episodeCount }) {
-    if (!anilistId) throw new Error('No anilistId provided')
-    if (!titles?.length) throw new Error('No titles provided')
-    const res = await fetch(`${this.url}?page=1&perPage=1&filter=alID%3D%22${anilistId}%22&skipTotal=1&expand=trs`)
+  async single({ titles, episode }) {
+    if (!titles?.length) return []
 
-    /** @type {import('./types').Nyaa} */
-    const { items } = await res.json()
+    const query = this.buildQuery(titles[0], episode)
+    const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${this.url}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`)}`
 
-    if (!items[0]?.expand?.trs?.length) return []
+    const res = await fetch(proxiedUrl)
+    const html = await res.text()
 
-    const { trs } = items[0].expand
-
-    return trs.filter(({ infoHash, files }) => {
-      if (infoHash === '<redacted>') return false
-      if (episodeCount && episodeCount !== 1 && files.length === 1) return false // skip sigle file spam for now
-      return true
-    }).map(torrent => {
-      return {
-        hash: torrent.infoHash,
-        link: torrent.infoHash,
-        title: torrent.files.length === 1 ? torrent.files[0].name : `[${torrent.releaseGroup}] ${titles[0]} ${torrent.dualAudio ? 'Dual Audio' : ''}`,
-        size: torrent.files.reduce((prev, curr) => prev + curr.length, 0),
-        type: torrent.isBest ? 'best' : 'alt',
-        date: new Date(torrent.created),
-        seeders: 0,
-        leechers: 0,
-        downloads: 0,
-        accuracy: 'high'
-      }
-    })
+    return this.parse(html)
   }
 
+  /** @type {import('./').SearchFunction} */
   batch = this.single
+  /** @type {import('./').SearchFunction} */
   movie = this.single
 
-  async test () {
-    const res = await fetch(this.url)
-    return res.ok
+  buildQuery(title, episode) {
+    const clean = title.replace(/[^\w\s-]/g, ' ').trim()
+    let query = clean
+    if (episode) query += ` ${episode.toString().padStart(2, '0')}`
+    return query
+  }
+
+  parse(html) {
+    const results = []
+    const rows = [...html.matchAll(/<tr>([\s\S]+?)<\/tr>/g)]
+
+    for (const row of rows) {
+      const tr = row[1]
+
+      const titleMatch = tr.match(/<a href="\/view\/\d+"[^>]*>([^<]+)<\/a>/)
+      const magnetMatch = tr.match(/href="(magnet:\?xt=urn:[^"]+)"/)
+      const hashMatch = magnetMatch?.[1].match(/btih:([a-fA-F0-9]+)/)
+      const seedMatch = tr.match(/<td class="text-center">(\d+)<\/td>\s*<td class="text-center">(\d+)<\/td>/)
+      const dateMatch = tr.match(/data-timestamp="(\d+)"/)
+      const sizeMatch = tr.match(/<td class="text-center">([\d.]+)\s+(MiB|GiB|MB|GB)<\/td>/)
+
+      if (!titleMatch || !magnetMatch || !hashMatch || !seedMatch || !dateMatch || !sizeMatch) continue
+
+      const [_, seeders, leechers] = seedMatch
+      const [__, sizeValue, sizeUnit] = sizeMatch
+      const size = this.parseSize(sizeValue, sizeUnit)
+
+      results.push({
+        title: titleMatch[1],
+        link: magnetMatch[1],
+        seeders: parseInt(seeders),
+        leechers: parseInt(leechers),
+        downloads: 0,
+        hash: hashMatch[1],
+        size,
+        verified: false,
+        date: new Date(parseInt(dateMatch[1]) * 1000),
+        type: 'alt'
+      })
+    }
+
+    return results
+  }
+
+  parseSize(value, unit) {
+    const num = parseFloat(value)
+    switch (unit) {
+      case 'MiB': case 'MB': return num * 1024 * 1024
+      case 'GiB': case 'GB': return num * 1024 * 1024 * 1024
+      default: return 0
+    }
+  }
+
+  async test() {
+    try {
+      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(this.url)}`)
+      return res.ok
+    } catch {
+      return false
+    }
   }
 }()
-
