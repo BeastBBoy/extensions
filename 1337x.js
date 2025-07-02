@@ -1,31 +1,34 @@
-export default class X1337xMovies {
-  name = "1337xMovies";
-  version = "1.0.0";
+export const X1337x = new class X1337x extends AbstractSource {
+  url = 'https://1337x.to'
 
-  async movie({ titles, resolution }) {
+  /** @type {import('./').SearchFunction} */
+  async single({ titles, resolution }) {
     for (const title of titles) {
-      const results = await this.search1337x(`${title} ${resolution}p`);
-      if (results.length) return results;
+      const results = await this.search(`${title} ${resolution}p`)
+      if (results.length) return results
     }
-    return [];
+    return []
   }
 
-  async single() { return []; }
-  async batch() { return []; }
+  batch = this.single
+  movie = this.single
 
-  async search1337x(query) {
-    const response = await fetch(`https://corsproxy.io/?https://1337x.to/search/${encodeURIComponent(query)}/1/`);
-    const html = await response.text();
-    const entries = [...html.matchAll(/<a href=\"\/torrent\/([^\"]+)\"[^>]*>([^<]+)<\/a><\/td>\s*<td class=\"coll-2 seeds\">(\d+)<\/td>\s*<td class=\"coll-3 leeches\">(\d+)/g)];
+  async search(query) {
+    const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${this.url}/search/${encodeURIComponent(query)}/1/`)}`
+    const html = await fetch(proxiedUrl).then(r => r.text())
 
-    return await Promise.all(entries.slice(0, 8).map(async ([, path, title, seeds, leech]) => {
-      const detailHtml = await (await fetch(`https://corsproxy.io/?https://1337x.to/torrent/${path}`)).text();
-      const magnet = detailHtml.match(/href=\"(magnet:[^\"]+)\"/)?.[1] ?? "";
-      const hash = magnet.match(/btih:([a-fA-F0-9]+)/)?.[1] ?? "";
-      const sizeMatch = detailHtml.match(/Size<\/td>\s*<td colspan=\"2\">([^<]+)<\/td>/);
-      const size = parseSize(sizeMatch?.[1] ?? "0 B");
-      const dateMatch = detailHtml.match(/Date uploaded<\/td>\s*<td colspan=\"2\">([^<]+)<\/td>/);
-      const date = new Date(dateMatch?.[1] ?? Date.now());
+    const entries = [...html.matchAll(/<a href="\/torrent\/([^"\s]+)"[^>]*>([^<]+)<\/a>\s*<\/td>\s*<td class="coll-2 seeds">(\d+)<\/td>\s*<td class="coll-3 leeches">(\d+)/g)]
+
+    return await Promise.all(entries.slice(0, 5).map(async ([, path, title, seeds, leech]) => {
+      const detailUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${this.url}/torrent/${path}`)}`
+      const detailHtml = await fetch(detailUrl).then(r => r.text())
+
+      const magnet = detailHtml.match(/href="(magnet:[^"]+)"/)?.[1] ?? ''
+      const hash = magnet.match(/btih:([a-fA-F0-9]+)/)?.[1] ?? ''
+      const sizeMatch = detailHtml.match(/Size<\/td>\s*<td colspan="2">([^<]+)<\/td>/)
+      const size = this.parseSize(sizeMatch?.[1] ?? '0 B')
+      const dateMatch = detailHtml.match(/Date uploaded<\/td>\s*<td colspan="2">([^<]+)<\/td>/)
+      const date = new Date(dateMatch?.[1] ?? Date.now())
 
       return {
         title,
@@ -37,18 +40,23 @@ export default class X1337xMovies {
         size,
         verified: false,
         date,
-        type: "best"
-      };
-    }));
+        type: 'best'
+      }
+    }))
   }
 
-  test() {
-    return fetch("https://corsproxy.io/?https://1337x.to").then(res => res.ok).catch(() => false);
+  parseSize(text) {
+    const [val, unit] = text.split(' ')
+    const mult = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9, TB: 1e12 }
+    return parseFloat(val.replace(',', '')) * (mult[unit] || 1)
   }
-}
 
-function parseSize(text) {
-  const [val, unit] = text.split(" ");
-  const mult = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9, TB: 1e12 };
-  return parseFloat(val.replace(",", "")) * (mult[unit] || 1);
-}
+  async test() {
+    try {
+      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(this.url)}`)
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+}()
