@@ -80,6 +80,12 @@ console.log('[Nyaa] Parsed results:', results.length)
       default: return 0
     }
   }
+  async proxiedFetch(url) {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+    const res = await fetch(proxyUrl)
+    if (!res.ok) throw new Error(`[Nyaa] Failed to fetch: ${res.status}`)
+    return res
+  }
 
   async test() {
     try {
