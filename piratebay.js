@@ -27,26 +27,32 @@ export default new class PirateBay extends AbstractSource {
 
   /** @param {Array} torrents */
   map(torrents) {
-    return torrents.map(t => {
-      const hashMatch = t.magnet.match(/btih:([a-fA-F0-9]+)/)
-      return {
-        title: t.title || 'Unknown',
-        link: t.magnet,
-        hash: hashMatch?.[1] || '',
-        seeders: parseInt(t.seeds || '0'),
-        leechers: parseInt(t.peers || '0'),
-        downloads: 0,
-        accuracy: 'medium',
-        size: this.parseSize(t.size),
-        date: new Date(),
-        verified: false,
-        type: 'alt'
-      }
-    }).filter(r => r.hash)
+    return torrents
+      .filter(t => t.magnet && typeof t.magnet === 'string')
+      .map(t => {
+        const hashMatch = t.magnet.match(/btih:([a-fA-F0-9]+)/)
+        return {
+          title: t.title || 'Unknown',
+          link: t.magnet,
+          hash: hashMatch?.[1] || '',
+          seeders: parseInt(t.seeds || '0'),
+          leechers: parseInt(t.peers || '0'),
+          downloads: 0,
+          accuracy: 'medium',
+          size: this.parseSize(t.size),
+          date: new Date(),
+          verified: false,
+          type: 'alt'
+        }
+      })
+      .filter(r => r.hash)
   }
 
   parseSize(sizeStr) {
-    const [num, unit] = sizeStr.split(' ')
+    if (!sizeStr) return 0
+    const parts = sizeStr.split(' ')
+    if (parts.length !== 2) return 0
+    const [num, unit] = parts
     const n = parseFloat(num)
     switch ((unit || '').toUpperCase()) {
       case 'MB': return n * 1024 * 1024
@@ -58,7 +64,7 @@ export default new class PirateBay extends AbstractSource {
 
   async test() {
     try {
-      const res = await fetch(`${this.url}/naruto`)
+      const res = await fetch(`${this.url}/one piece`)
       return res.ok
     } catch {
       return false
