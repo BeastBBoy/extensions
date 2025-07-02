@@ -38,23 +38,11 @@
     "update": "gh:hayase-app/extensions",
     "code": "gh:hayase-app/extensions/animetosho-nzb"
   },
-  {
-    "name": "Sukebei",
-    "id": "sukebei",
-    "version": "1.0.0",
-    "type": "torrent",
-    "accuracy": "high",
-    "ratio": 0,
-    "media": "sub",
-    "languages": ["US"],
-    "icon": "https://nyaa.si/static/favicon.png",
-    "update": "gh:BeastBBoy/extensions",
-    "code": "gh:BeastBBoy/extensions/sukebei"
-  },
+
   {
     "name": "Nyaa",
     "id": "nyaa",
-    "version": "1.0.2",
+    "version": "0.0.2",
     "type": "torrent",
     "accuracy": "high",
     "ratio": 0,
@@ -64,17 +52,5 @@
     "update": "gh:BeastBBoy/extensions",
     "code": "gh:BeastBBoy/extensions/nyaa"
   },
-  {
-    "name": "1337x",
-    "id": "1337x",
-    "version": "1.0.1",
-    "type": "torrent",
-    "accuracy": "medium",
-    "ratio": 0,
-    "media": "dub",
-    "languages": ["US"],
-    "icon": "https://1337x.to/favicon.ico",
-    "update": "gh:BeastBBoy/extensions",
-    "code": "gh:BeastBBoy/extensions/1337x"
-  }
+
 ]
