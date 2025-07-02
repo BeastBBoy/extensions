@@ -9,7 +9,7 @@ export default new class X1337x extends AbstractSource {
 
     for (const title of titles) {
       const query = `${title} ${resolution ?? ''}p`;
-      const results = await this.search1337x(query);
+      const results = await this.fetchResults(query);
       if (results.length) return results;
     }
 
@@ -24,7 +24,7 @@ export default new class X1337x extends AbstractSource {
     return res.ok;
   }
 
-  async search1337x(query) {
+  async fetchResults(query) {
     const response = await fetch(`${this.base}/search/${encodeURIComponent(query)}/1/`);
     const html = await response.text();
 
@@ -36,20 +36,21 @@ export default new class X1337x extends AbstractSource {
 
         const magnet = detailHtml.match(/href="(magnet:[^"]+)"/)?.[1] ?? '';
         const hash = magnet.match(/btih:([a-fA-F0-9]+)/)?.[1] ?? '';
+        if (!magnet || !hash) return null;
 
         const sizeText = detailHtml.match(/Size<\/td>\s*<td colspan="2">([^<]+)<\/td>/)?.[1] ?? '0 B';
         const size = this.parseSize(sizeText);
 
         const dateText = detailHtml.match(/Date uploaded<\/td>\s*<td colspan="2">([^<]+)<\/td>/)?.[1] ?? '';
-        const date = new Date(dateText);
+        const date = new Date(dateText || Date.now());
 
         return {
           title,
           link: magnet,
+          hash,
           seeders: parseInt(seeds, 10),
           leechers: parseInt(leech, 10),
           downloads: 0,
-          hash,
           size,
           verified: false,
           date,
@@ -58,7 +59,7 @@ export default new class X1337x extends AbstractSource {
       } catch (e) {
         return null;
       }
-    })).then(results => results.filter(Boolean));
+    })).then(r => r.filter(Boolean));
   }
 
   parseSize(text) {
