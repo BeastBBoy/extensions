@@ -45,9 +45,9 @@
     "code": "gh:hayase-app/extensions/animetosho-nzb"
   },
   {
-    "name": "Nyaa",
-    "id": "nyaa",
-    "version": "0.0.6",
+    "name": "Nyaasi",
+    "id": "nyaasi",
+    "version": "0.0.1",
     "type": "torrent",
     "accuracy": "high",
     "ratio": 0,
@@ -57,7 +57,7 @@
     ],
     "icon": "https://nyaa.si/static/favicon.png",
     "update": "gh:BeastBBoy/extensions",
-    "code": "gh:BeastBBoy/extensions/nyaa"
+    "code": "gh:BeastBBoy/extensions/nyaasi"
   },
 {
   "id": "1337x",
