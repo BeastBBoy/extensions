@@ -1,69 +1,69 @@
-import AbstractSource from './abstract.js'
+import AbstractSource from './abstract.js';
 
 export default new class X1337x extends AbstractSource {
-  url = atob('aHR0cHM6Ly9jb3JzcHJveHkubGlnaHRzcGVlZC5kZXYvP2NvcnM9') // proxy for https://1337x.to/
+  base = 'https://corsproxy.io/?https://1337x.to';
 
   /** @type {import('./').SearchFunction} */
   async single({ titles, resolution }) {
-    if (!titles?.length) return []
+    if (!titles?.length) return [];
 
     for (const title of titles) {
-      const results = await this.search(`${title} ${resolution || ''}p`)
-      if (results.length) return results
+      const query = `${title} ${resolution ?? ''}p`;
+      const results = await this.search1337x(query);
+      if (results.length) return results;
     }
 
-    return []
+    return [];
   }
 
-  batch = this.single
-  movie = this.single
+  batch = this.single;
+  movie = this.single;
 
-  async test () {
-    return true // or a working fetch check
+  async test() {
+    const res = await fetch(this.base + '/search/test/1/');
+    return res.ok;
   }
 
-  async search(query) {
-    const url = this.url + encodeURIComponent(`https://1337x.to/search/${query}/1/`)
-    const response = await fetch(url)
-    const html = await response.text()
+  async search1337x(query) {
+    const response = await fetch(`${this.base}/search/${encodeURIComponent(query)}/1/`);
+    const html = await response.text();
 
-    const entries = [...html.matchAll(/<a href="\/torrent\/([^"]+)"[^>]*>([^<]+)<\/a><\/td>\s*<td class="coll-2 seeds">(\d+)<\/td>\s*<td class="coll-3 leeches">(\d+)/g)]
+    const entries = [...html.matchAll(/<a href="\/torrent\/([^"]+)"[^>]*>([^<]+)<\/a><\/td>\s*<td class="coll-2 seeds">(\d+)<\/td>\s*<td class="coll-3 leeches">(\d+)/g)];
 
     return await Promise.all(entries.slice(0, 8).map(async ([, path, title, seeds, leech]) => {
       try {
-        const detailUrl = this.url + encodeURIComponent(`https://1337x.to/torrent/${path}`)
-        const detailHtml = await (await fetch(detailUrl)).text()
+        const detailHtml = await (await fetch(`${this.base}/torrent/${path}`)).text();
 
-        const magnet = detailHtml.match(/href="(magnet:[^"]+)"/)?.[1] ?? ''
-        const hash = magnet.match(/btih:([a-fA-F0-9]+)/)?.[1] ?? ''
+        const magnet = detailHtml.match(/href="(magnet:[^"]+)"/)?.[1] ?? '';
+        const hash = magnet.match(/btih:([a-fA-F0-9]+)/)?.[1] ?? '';
 
-        const sizeMatch = detailHtml.match(/Size<\/td>\s*<td colspan="2">([^<]+)<\/td>/)
-        const size = this.parseSize(sizeMatch?.[1] ?? '0 B')
+        const sizeText = detailHtml.match(/Size<\/td>\s*<td colspan="2">([^<]+)<\/td>/)?.[1] ?? '0 B';
+        const size = this.parseSize(sizeText);
 
-        const dateMatch = detailHtml.match(/Date uploaded<\/td>\s*<td colspan="2">([^<]+)<\/td>/)
-        const date = new Date(dateMatch?.[1] ?? Date.now())
+        const dateText = detailHtml.match(/Date uploaded<\/td>\s*<td colspan="2">([^<]+)<\/td>/)?.[1] ?? '';
+        const date = new Date(dateText);
 
         return {
           title,
           link: magnet,
-          seeders: +seeds,
-          leechers: +leech,
+          seeders: parseInt(seeds, 10),
+          leechers: parseInt(leech, 10),
           downloads: 0,
           hash,
           size,
           verified: false,
           date,
           type: 'best'
-        }
-      } catch {
-        return null
+        };
+      } catch (e) {
+        return null;
       }
-    })).then(results => results.filter(Boolean))
+    })).then(results => results.filter(Boolean));
   }
 
   parseSize(text) {
-    const [val, unit] = text.split(" ")
-    const mult = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9, TB: 1e12 }
-    return parseFloat(val.replace(",", "")) * (mult[unit] || 1)
+    const [val, unit] = text.split(" ");
+    const mult = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9, TB: 1e12 };
+    return parseFloat(val.replace(",", "")) * (mult[unit] || 1);
   }
-}()
+}();
