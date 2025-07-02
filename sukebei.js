@@ -1,58 +1,69 @@
-import AbstractSource from './abstract.js';
-
-export default new class Sukebei extends AbstractSource {
-  url = 'https://corsproxy.io/?https://sukebei.nyaa.si';
+export const Sukebei = new class Sukebei extends AbstractSource {
+  url = 'https://sukebei.nyaa.si'
 
   /** @type {import('./').SearchFunction} */
-  async single({ anilistId, titles, episodeCount }) {
-    if (!anilistId) throw new Error('No anilistId provided');
-    if (!titles?.length) throw new Error('No titles provided');
+  async single({ titles }) {
+    if (!titles?.length) return []
 
-    const res = await fetch(`${this.url}/?f=0&c=1_0&q=${encodeURIComponent(titles[0])}&p=1`);
-    const html = await res.text();
+    const query = titles[0]
+    const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${this.url}/?f=0&c=1_0&q=${query}`)}`
+    const html = await fetch(proxiedUrl).then(r => r.text())
 
-    const rows = html.match(/<tr class="(default|success)"[\s\S]+?<\/tr>/g) || [];
+    return this.parse(html)
+  }
 
-    return rows.map(row => {
-      const title = row.match(/title="[^"]+">([^<]+)<\/a>/)?.[1] ?? 'Unknown';
-      const infoHash = row.match(/magnet:\?xt=urn:btih:([a-f0-9]{40})/)?.[1] ?? '';
-      const magnet = `magnet:?xt=urn:btih:${infoHash}&tr=http%3A%2F%2Fopen.nyaatorrents.info%3A6544%2Fannounce&dn=${encodeURIComponent(title)}`;
+  batch = this.single
+  movie = this.single
 
-      const sizeMatch = row.match(/<td class="text-center">([\d.]+) ([MGK]i?B)<\/td>/);
-      const size = sizeMatch ? parseSize(sizeMatch[1], sizeMatch[2]) : 0;
+  parse(html) {
+    const results = []
+    const rows = [...html.matchAll(/<tr.*?>([\s\S]*?)<\/tr>/g)]
 
-      const [seeders, leechers] = row.match(/<td class="text-center">(\d+)<\/td>/g)?.slice(-3, -1).map(n => parseInt(n.replace(/\D/g, ''))) || [0, 0];
+    for (const [_, row] of rows) {
+      const titleMatch = row.match(/title="[^"]+">([^<]+)<\/a>/)
+      const magnetMatch = row.match(/href="(magnet:[^"]+)"/)
+      const hash = magnetMatch?.[1].match(/btih:([a-fA-F0-9]+)/)?.[1] ?? ''
+      const seeders = parseInt(row.match(/<td class="text-center">(\d+)<\/td>/)?.[1] || '0')
+      const leechers = parseInt(row.match(/<td class="text-center">\d+<\/td>\s*<td class="text-center">(\d+)<\/td>/)?.[1] || '0')
+      const sizeMatch = row.match(/<td class="text-center">([\d.]+)\s+(MiB|GiB|MB|GB)<\/td>/)
+      const size = sizeMatch ? this.parseSize(sizeMatch[1], sizeMatch[2]) : 0
+      const dateMatch = row.match(/data-timestamp="(\d+)"/)
+      const date = dateMatch ? new Date(parseInt(dateMatch[1]) * 1000) : new Date()
 
-      const dateMatch = row.match(/data-timestamp="(\d+)"/);
-      const date = dateMatch ? new Date(parseInt(dateMatch[1], 10) * 1000) : new Date();
+      if (!titleMatch || !magnetMatch || !hash) continue
 
-      return {
-        title,
-        link: magnet,
-        hash: infoHash,
+      results.push({
+        title: titleMatch[1],
+        link: magnetMatch[1],
+        hash,
         size,
-        type: 'alt',
-        date,
         seeders,
         leechers,
         downloads: 0,
-        accuracy: 'medium'
-      };
-    });
+        verified: false,
+        date,
+        type: 'alt'
+      })
+    }
+
+    return results
   }
 
-  batch = this.single;
-  movie = this.single;
+  parseSize(val, unit) {
+    const num = parseFloat(val)
+    switch (unit) {
+      case 'MiB': case 'MB': return num * 1024 * 1024
+      case 'GiB': case 'GB': return num * 1024 * 1024 * 1024
+      default: return 0
+    }
+  }
 
   async test() {
-    const res = await fetch(this.url);
-    return res.ok;
+    try {
+      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(this.url)}`)
+      return res.ok
+    } catch {
+      return false
+    }
   }
-}();
-
-function parseSize(val, unit) {
-  const size = parseFloat(val.replace(",", ""));
-  const units = { KiB: 1024, MiB: 1048576, GiB: 1073741824, KB: 1e3, MB: 1e6, GB: 1e9 };
-  return size * (units[unit] || 1);
-}
-
+}()
