@@ -8,55 +8,64 @@ export default new class Nyaa extends AbstractSource {
     if (!titles?.length) return []
 
     const query = this.buildQuery(titles[0], episode)
-    const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${this.url}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`)}`
+    const searchUrl = `${this.url}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(searchUrl)}`
 
-    const res = await fetch(proxiedUrl)
+    const res = await fetch(proxyUrl)
     const html = await res.text()
+
     return this.parse(html)
   }
 
+  /** @type {import('./').SearchFunction} */
   batch = this.single
+
+  /** @type {import('./').SearchFunction} */
   movie = this.single
 
   buildQuery(title, episode) {
     const clean = title.replace(/[^\w\s-]/g, ' ').trim()
     let query = clean
     if (episode) query += ` ${episode.toString().padStart(2, '0')}`
-    return query
+    return encodeURIComponent(query)
   }
 
   parse(html) {
     const results = []
-    const rows = [...html.matchAll(/<tr>([\s\S]+?)<\/tr>/g)]
+    const rows = [...html.matchAll(/<tr>([\s\S]*?)<\/tr>/g)]
 
     for (const row of rows) {
       const tr = row[1]
 
       const titleMatch = tr.match(/<a href="\/view\/\d+"[^>]*>([^<]+)<\/a>/)
       const magnetMatch = tr.match(/href="(magnet:\?xt=urn:[^"]+)"/)
-      const hashMatch = magnetMatch?.[1].match(/btih:([a-fA-F0-9]+)/)
-      const dateMatch = tr.match(/data-timestamp="(\d+)"/)
+      const hashMatch = magnetMatch?.[1]?.match(/btih:([a-fA-F0-9]+)/)
       const sizeMatch = tr.match(/<td class="text-center">([\d.]+)\s+(MiB|GiB|MB|GB)<\/td>/)
-      const statsMatch = [...tr.matchAll(/<td class="text-center">(\d+)<\/td>/g)]
+      const dateMatch = tr.match(/data-timestamp="(\d+)"/)
+      const stats = [...tr.matchAll(/<td class="text-center">(\d+)<\/td>/g)]
+      const seeders = stats[stats.length - 2]?.[1]
+      const leechers = stats[stats.length - 1]?.[1]
 
-      if (!titleMatch || !magnetMatch || !hashMatch || !dateMatch || !sizeMatch || statsMatch.length < 3) continue
+      if (!titleMatch || !magnetMatch || !hashMatch || !sizeMatch || !dateMatch || !seeders || !leechers) continue
 
-      const seeders = parseInt(statsMatch[1][1])
-      const leechers = parseInt(statsMatch[2][1])
-      const [__, sizeVal, sizeUnit] = sizeMatch
-      const size = this.parseSize(sizeVal, sizeUnit)
+      const title = titleMatch[1]
+      const magnet = magnetMatch[1]
+      const hash = hashMatch[1]
+      const size = this.parseSize(sizeMatch[1], sizeMatch[2])
+      const date = new Date(parseInt(dateMatch[1]) * 1000)
 
       results.push({
-        title: titleMatch[1],
-        link: magnetMatch[1],
-        hash: hashMatch[1],
-        seeders,
-        leechers,
+        title,
+        link: magnet,
+        hash,
+        seeders: parseInt(seeders),
+        leechers: parseInt(leechers),
         downloads: 0,
         verified: false,
         size,
-        date: new Date(parseInt(dateMatch[1]) * 1000),
-        type: 'alt'
+        date,
+        type: 'alt',
+        accuracy: 'high'
       })
     }
 
@@ -66,8 +75,10 @@ export default new class Nyaa extends AbstractSource {
   parseSize(value, unit) {
     const num = parseFloat(value)
     switch (unit) {
-      case 'MiB': case 'MB': return num * 1024 * 1024
-      case 'GiB': case 'GB': return num * 1024 * 1024 * 1024
+      case 'MiB':
+      case 'MB': return num * 1024 * 1024
+      case 'GiB':
+      case 'GB': return num * 1024 * 1024 * 1024
       default: return 0
     }
   }
