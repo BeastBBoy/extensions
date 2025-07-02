@@ -9,10 +9,9 @@ export default new class Nyaa extends AbstractSource {
 
     const query = this.buildQuery(titles[0], episode)
     const searchUrl = `${this.url}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`
-    
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(searchUrl)}`
 
-
-    const res = await this.proxiedFetch(searchUrl)
+    const res = await fetch(proxyUrl)
     const html = await res.text()
 
     return this.parse(html)
@@ -80,12 +79,7 @@ console.log('[Nyaa] Parsed results:', results.length)
       default: return 0
     }
   }
-  async proxiedFetch(url) {
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-    const res = await fetch(proxyUrl)
-    if (!res.ok) throw new Error(`[Nyaa] Failed to fetch: ${res.status}`)
-    return res
-  }
+
 
   async test() {
     try {
