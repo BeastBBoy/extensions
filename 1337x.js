@@ -71,8 +71,12 @@ export default new class X1337x extends AbstractSource {
     return results
   }
 
-  async test () {
-    const res = await fetch(this.url)
-    return res.ok
+  async test() {
+    try {
+      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(this.url)}`)
+      return res.ok
+    } catch {
+      return false
+    }
   }
 }()
