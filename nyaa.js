@@ -9,10 +9,10 @@ export default new class Nyaa extends AbstractSource {
 
     const query = this.buildQuery(titles[0], episode)
     const searchUrl = `${this.url}/?f=0&c=1_2&q=${query}&s=seeders&o=desc`
-    const proxyUrl = `https://api.allorigins.win/raw?url=${searchUrl}`
+    
 
 
-    const res = await fetch(proxyUrl)
+    const res = await this.proxiedFetch(searchUrl)
     const html = await res.text()
 
     return this.parse(html)
