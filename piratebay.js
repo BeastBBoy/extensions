@@ -1,16 +1,19 @@
 import AbstractSource from './abstract.js'
 
 export default new class PirateBay extends AbstractSource {
-  url = 'https://torrent-search-api-livid.vercel.app/api/piratebay'
+  base = 'https://torrent-search-api-livid.vercel.app/api/piratebay'
 
   /** @type {import('./').SearchFunction} */
   async single({ titles, episode }) {
     if (!titles?.length) return []
 
     const query = this.buildQuery(titles[0], episode)
-    const res = await fetch(`${this.url}/${query}`)
-    const data = await res.json()
+    const url = `${this.base}/${query}/1` // Page 1
 
+    const res = await fetch(url)
+    if (!res.ok) return []
+
+    const data = await res.json()
     return this.map(data)
   }
 
@@ -25,7 +28,6 @@ export default new class PirateBay extends AbstractSource {
     return encodeURIComponent(query)
   }
 
-  /** @param {Array} torrents */
   map(torrents) {
     return torrents
       .filter(t => t.magnet && typeof t.magnet === 'string')
@@ -44,8 +46,7 @@ export default new class PirateBay extends AbstractSource {
           verified: false,
           type: 'alt'
         }
-      })
-      .filter(r => r.hash)
+      }).filter(r => r.hash)
   }
 
   parseSize(sizeStr) {
@@ -64,7 +65,7 @@ export default new class PirateBay extends AbstractSource {
 
   async test() {
     try {
-      const res = await fetch(`${this.url}/one piece`)
+      const res = await fetch(`${this.base}/one piece/1`)
       return res.ok
     } catch {
       return false
