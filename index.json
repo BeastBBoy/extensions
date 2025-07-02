@@ -59,19 +59,19 @@
     "update": "gh:BeastBBoy/extensions",
     "code": "gh:BeastBBoy/extensions/nyaa"
   },
-  {
-    "name": "1337x",
-    "id": "1337x",
-    "version": "0.0.1",
-    "type": "torrent",
-    "accuracy": "high",
-    "ratio": 0,
-    "media": "both",
-    "languages": [
-      "US"
-    ],
-    "icon": "https://nyaa.si/static/favicon.png",
-    "update": "gh:BeastBBoy/extensions",
-    "code": "gh:BeastBBoy/extensions/1337x"
-  }
+{
+  "id": "1337x",
+  "name": "1337x",
+  "version": "0.0.2",
+  "type": "torrent",
+  "accuracy": "medium",
+  "media": "sub",
+  "languages": [
+    "US"
+  ],
+  "icon": "https://1337x.to/favicon.ico",
+  "update": "gh:BeastBBoy/extensions",
+  "code": "gh:BeastBBoy/extensions/1337x"
+}
+
 ]
