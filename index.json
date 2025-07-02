@@ -7,7 +7,9 @@
     "accuracy": "high",
     "ratio": 0,
     "media": "sub",
-    "languages": ["US"],
+    "languages": [
+      "US"
+    ],
     "icon": "https://releases.moe/favicon.png",
     "update": "gh:hayase-app/extensions",
     "code": "gh:hayase-app/extensions/seadex"
@@ -20,7 +22,9 @@
     "accuracy": "high",
     "ratio": 0,
     "media": "sub",
-    "languages": ["US"],
+    "languages": [
+      "US"
+    ],
     "icon": "https://animetosho.org/inc/favicon.ico",
     "update": "gh:hayase-app/extensions",
     "code": "gh:hayase-app/extensions/animetosho"
@@ -33,7 +37,9 @@
     "accuracy": "high",
     "ratio": 0,
     "media": "sub",
-    "languages": ["US"],
+    "languages": [
+      "US"
+    ],
     "icon": "https://animetosho.org/inc/favicon.ico",
     "update": "gh:hayase-app/extensions",
     "code": "gh:hayase-app/extensions/animetosho-nzb"
@@ -46,7 +52,9 @@
     "accuracy": "high",
     "ratio": 0,
     "media": "sub",
-    "languages": ["US"],
+    "languages": [
+      "US"
+    ],
     "icon": "https://nyaa.si/static/favicon.png",
     "update": "gh:BeastBBoy/extensions",
     "code": "gh:BeastBBoy/extensions/nyaa"
