@@ -38,7 +38,6 @@
     "update": "gh:hayase-app/extensions",
     "code": "gh:hayase-app/extensions/animetosho-nzb"
   },
-
   {
     "name": "Nyaa",
     "id": "nyaa",
@@ -52,5 +51,4 @@
     "update": "gh:BeastBBoy/extensions",
     "code": "gh:BeastBBoy/extensions/nyaa"
   },
-
 ]
