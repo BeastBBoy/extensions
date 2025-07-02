@@ -12,13 +12,10 @@ export default new class Nyaa extends AbstractSource {
 
     const res = await fetch(proxiedUrl)
     const html = await res.text()
-
     return this.parse(html)
   }
 
-  /** @type {import('./').SearchFunction} */
   batch = this.single
-  /** @type {import('./').SearchFunction} */
   movie = this.single
 
   buildQuery(title, episode) {
@@ -38,25 +35,26 @@ export default new class Nyaa extends AbstractSource {
       const titleMatch = tr.match(/<a href="\/view\/\d+"[^>]*>([^<]+)<\/a>/)
       const magnetMatch = tr.match(/href="(magnet:\?xt=urn:[^"]+)"/)
       const hashMatch = magnetMatch?.[1].match(/btih:([a-fA-F0-9]+)/)
-      const seedMatch = tr.match(/<td class="text-center">(\d+)<\/td>\s*<td class="text-center">(\d+)<\/td>/)
       const dateMatch = tr.match(/data-timestamp="(\d+)"/)
       const sizeMatch = tr.match(/<td class="text-center">([\d.]+)\s+(MiB|GiB|MB|GB)<\/td>/)
+      const statsMatch = [...tr.matchAll(/<td class="text-center">(\d+)<\/td>/g)]
 
-      if (!titleMatch || !magnetMatch || !hashMatch || !seedMatch || !dateMatch || !sizeMatch) continue
+      if (!titleMatch || !magnetMatch || !hashMatch || !dateMatch || !sizeMatch || statsMatch.length < 3) continue
 
-      const [_, seeders, leechers] = seedMatch
-      const [__, sizeValue, sizeUnit] = sizeMatch
-      const size = this.parseSize(sizeValue, sizeUnit)
+      const seeders = parseInt(statsMatch[1][1])
+      const leechers = parseInt(statsMatch[2][1])
+      const [__, sizeVal, sizeUnit] = sizeMatch
+      const size = this.parseSize(sizeVal, sizeUnit)
 
       results.push({
         title: titleMatch[1],
         link: magnetMatch[1],
-        seeders: parseInt(seeders),
-        leechers: parseInt(leechers),
-        downloads: 0,
         hash: hashMatch[1],
-        size,
+        seeders,
+        leechers,
+        downloads: 0,
         verified: false,
+        size,
         date: new Date(parseInt(dateMatch[1]) * 1000),
         type: 'alt'
       })
@@ -83,3 +81,4 @@ export default new class Nyaa extends AbstractSource {
     }
   }
 }()
+
