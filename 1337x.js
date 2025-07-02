@@ -1,70 +1,82 @@
-import AbstractSource from './abstract.js';
+import AbstractSource from './abstract.js'
 
 export default new class X1337x extends AbstractSource {
-  base = 'https://corsproxy.io/?https://1337x.to';
+  url = 'https://1337x.to'
 
   /** @type {import('./').SearchFunction} */
-  async single({ titles, resolution }) {
-    if (!titles?.length) return [];
+  async single({ titles, episode, resolution }) {
+    if (!titles?.length) return []
+    const query = this.buildQuery(titles[0], episode, resolution)
+    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${this.url}/search/${query}/1/`)}`
 
-    for (const title of titles) {
-      const query = `${title} ${resolution ?? ''}p`;
-      const results = await this.fetchResults(query);
-      if (results.length) return results;
+    const res = await fetch(proxy)
+    const html = await res.text()
+    return this.parseList(html)
+  }
+
+  batch = this.single
+  movie = this.single
+
+  buildQuery(title, episode, resolution) {
+    let query = title.replace(/[^\w\s-]/g, ' ').trim()
+    if (episode) query += ` ${episode.toString().padStart(2, '0')}`
+    if (resolution) query += ` ${resolution}p`
+    return query
+  }
+
+  parseSize(value) {
+    const [val, unit] = value.split(' ')
+    const num = parseFloat(val.replace(',', ''))
+    switch (unit) {
+      case 'MB': return num * 1e6
+      case 'MiB': return num * 1048576
+      case 'GB': return num * 1e9
+      case 'GiB': return num * 1073741824
+      default: return 0
     }
-
-    return [];
   }
 
-  batch = this.single;
-  movie = this.single;
+  async parseList(html) {
+    const entries = [...html.matchAll(/<a href="\/torrent\/([^"\n]+)"[^>]*>([^<]+)<\/a><\/td>\s*<td class="coll-2 seeds">(\d+)<\/td>\s*<td class="coll-3 leeches">(\d+)/g)]
+    const results = []
 
-  async test() {
-    const res = await fetch(this.base + '/search/test/1/');
-    return res.ok;
-  }
-
-  async fetchResults(query) {
-    const response = await fetch(`${this.base}/search/${encodeURIComponent(query)}/1/`);
-    const html = await response.text();
-
-    const entries = [...html.matchAll(/<a href="\/torrent\/([^"]+)"[^>]*>([^<]+)<\/a><\/td>\s*<td class="coll-2 seeds">(\d+)<\/td>\s*<td class="coll-3 leeches">(\d+)/g)];
-
-    return await Promise.all(entries.slice(0, 8).map(async ([, path, title, seeds, leech]) => {
+    for (const [, path, title, seeds, leeches] of entries.slice(0, 8)) {
+      const detailUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${this.url}/torrent/${path}`)}`
       try {
-        const detailHtml = await (await fetch(`${this.base}/torrent/${path}`)).text();
+        const html = await (await fetch(detailUrl)).text()
+        const magnet = html.match(/href="(magnet:[^"]+)"/)?.[1] ?? ''
+        const hash = magnet.match(/btih:([a-fA-F0-9]+)/)?.[1] ?? ''
+        const sizeMatch = html.match(/Size<\/td>\s*<td colspan="2">([^<]+)<\/td>/)
+        const size = this.parseSize(sizeMatch?.[1] ?? '0 B')
+        const dateMatch = html.match(/Date uploaded<\/td>\s*<td colspan="2">([^<]+)<\/td>/)
+        const date = dateMatch ? new Date(dateMatch[1]) : new Date()
 
-        const magnet = detailHtml.match(/href="(magnet:[^"]+)"/)?.[1] ?? '';
-        const hash = magnet.match(/btih:([a-fA-F0-9]+)/)?.[1] ?? '';
-        if (!magnet || !hash) return null;
-
-        const sizeText = detailHtml.match(/Size<\/td>\s*<td colspan="2">([^<]+)<\/td>/)?.[1] ?? '0 B';
-        const size = this.parseSize(sizeText);
-
-        const dateText = detailHtml.match(/Date uploaded<\/td>\s*<td colspan="2">([^<]+)<\/td>/)?.[1] ?? '';
-        const date = new Date(dateText || Date.now());
-
-        return {
+        results.push({
           title,
           link: magnet,
           hash,
-          seeders: parseInt(seeds, 10),
-          leechers: parseInt(leech, 10),
+          seeders: parseInt(seeds),
+          leechers: parseInt(leeches),
           downloads: 0,
           size,
           verified: false,
           date,
-          type: 'best'
-        };
+          type: 'alt'
+        })
       } catch (e) {
-        return null;
+        continue
       }
-    })).then(r => r.filter(Boolean));
+    }
+
+    return results
   }
 
-  parseSize(text) {
-    const [val, unit] = text.split(" ");
-    const mult = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9, TB: 1e12 };
-    return parseFloat(val.replace(",", "")) * (mult[unit] || 1);
+  async test() {
+    try {
+      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(this.url)}`)
+      return res.ok
+    } catch {
+      return false
+    }
   }
-}();
+}()
