@@ -1,73 +1,53 @@
 import AbstractSource from './abstract.js'
 
 export default new class PirateBay extends AbstractSource {
-  url = 'https://api.ryukme.dev/piratebay'
+  base = 'https://torrent-exonoob-in.vercel.app/api'
 
   /** @type {import('./').SearchFunction} */
   async single({ titles, episode }) {
     if (!titles?.length) return []
-
-    const query = this.buildQuery(titles[0], episode)
-    const res = await fetch(`${this.url}/search?query=${query}`)
+    const q = titles[0].replace(/[^\w\s-]/g, ' ').trim()
+    const url = `${this.base}/piratebay/${encodeURIComponent(q)}`
+    const res = await fetch(url)
+    if (!res.ok) return []
     const data = await res.json()
-
     return this.map(data)
   }
 
-  /** @type {import('./').SearchFunction} */
   batch = this.single
-
-  /** @type {import('./').SearchFunction} */
   movie = this.single
 
-  buildQuery(title, episode) {
-    const clean = title.replace(/[^\w\s-]/g, ' ').trim()
-    let query = clean
-    if (episode) query += ` ${episode.toString().padStart(2, '0')}`
-    return encodeURIComponent(query)
-  }
-
-  /**
-   * @param {any[]} items
-   * @returns {import('./').TorrentResult[]}
-   */
   map(items) {
-    return items.map(item => {
-      const hashMatch = item.magnet.match(/btih:([a-fA-F0-9]+)/i)
-      const hash = hashMatch ? hashMatch[1] : ''
-      return {
-        title: item.title,
-        link: item.magnet,
-        hash,
-        seeders: parseInt(item.seeders || 0),
-        leechers: parseInt(item.leechers || 0),
-        downloads: parseInt(item.peers || 0),
-        accuracy: 'medium',
-        size: this.parseSize(item.size),
-        date: new Date(item.uploaded || Date.now()),
-        type: 'alt',
-        verified: item.verified || false
-      }
-    }).filter(t => t.hash && t.link)
+    return items.map(item => ({
+      title: item.Name,
+      link: item.Magnet,
+      hash: item.Magnet.match(/btih:([A-Fa-f0-9]+)/)?.[1] || '',
+      seeders: Number(item.Seeders) || 0,
+      leechers: Number(item.Leechers) || 0,
+      downloads: Number(item.Downloads) || 0,
+      size: this.parseSize(item.Size),
+      date: new Date(item.DateUploaded),
+      verified: false,
+      type: 'alt',
+      accuracy: 'medium'
+    })).filter(r => r.hash)
   }
 
-  parseSize(sizeString) {
-    const match = sizeString.match(/([\d.]+)\s*(KB|MB|GB|TB)/i)
-    if (!match) return 0
-    const [_, num, unit] = match
-    const value = parseFloat(num)
-    switch (unit.toUpperCase()) {
-      case 'KB': return value * 1024
-      case 'MB': return value * 1024 ** 2
-      case 'GB': return value * 1024 ** 3
-      case 'TB': return value * 1024 ** 4
+  parseSize(text) {
+    const [val, unit] = text.split(' ')
+    const num = parseFloat(val)
+    switch ((unit || '').toUpperCase()) {
+      case 'KB': return num * 1024
+      case 'MB': return num * 1024 ** 2
+      case 'GB': return num * 1024 ** 3
+      case 'TB': return num * 1024 ** 4
       default: return 0
     }
   }
 
   async test() {
     try {
-      const res = await fetch(`${this.url}/search?query=One+Piece`)
+      const res = await fetch(`${this.base}/piratebay/test`)
       return res.ok
     } catch {
       return false
