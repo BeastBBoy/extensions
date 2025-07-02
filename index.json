@@ -51,7 +51,7 @@
     "type": "torrent",
     "accuracy": "high",
     "ratio": 0,
-    "media": "dub",
+    "media": "both",
     "languages": [
       "US"
     ],
