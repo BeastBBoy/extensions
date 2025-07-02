@@ -28,26 +28,28 @@ export default new class PirateBay extends AbstractSource {
     return encodeURIComponent(query)
   }
 
-  map(torrents) {
-    return torrents
-      .filter(t => t.magnet && typeof t.magnet === 'string')
-      .map(t => {
-        const hashMatch = t.magnet.match(/btih:([a-fA-F0-9]+)/)
-        return {
-          title: t.title || 'Unknown',
-          link: t.magnet,
-          hash: hashMatch?.[1] || '',
-          seeders: parseInt(t.seeds || '0'),
-          leechers: parseInt(t.peers || '0'),
-          downloads: 0,
-          accuracy: 'medium',
-          size: this.parseSize(t.size),
-          date: new Date(),
-          verified: false,
-          type: 'alt'
-        }
-      }).filter(r => r.hash)
-  }
+map(torrents) {
+  return torrents
+    .filter(t => t.magnet && typeof t.magnet === 'string')
+    .map(t => {
+      const hashMatch = (t.magnet || '').match(/btih:([a-fA-F0-9]+)/)
+      console.log('[PirateBay] Parsed results:', torrents.length)
+
+      return {
+        title: t.title || 'Unknown',
+        link: t.magnet || '',
+        hash: hashMatch?.[1] || '',
+        seeders: parseInt(t.seeds || '0'),
+        leechers: parseInt(t.peers || '0'),
+        downloads: 0,
+        accuracy: 'medium',
+        size: this.parseSize(t.size),
+        date: new Date(),
+        verified: false,
+        type: 'alt'
+      }
+    }).filter(r => r.hash)
+}
 
   parseSize(sizeStr) {
     if (!sizeStr) return 0
