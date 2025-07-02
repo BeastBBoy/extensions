@@ -62,7 +62,7 @@
     "languages": ["US"],
     "icon": "https://nyaa.si/static/favicon.png",
     "update": "gh:BeastBBoy/extensions",
-    "code": "gh:BeastBBoy/extensions/nyaa"
+    "code": "gh:BeastBBoy/extensions/nyaa.js"
   },
   {
     "name": "1337x",
