@@ -30,47 +30,43 @@ export default new class Nyaa extends AbstractSource {
     return encodeURIComponent(query)
   }
 
-  parse(html) {
-    const results = []
-    const rows = [...html.matchAll(/<tr>([\s\S]*?)<\/tr>/g)]
+parse(html) {
+  const results = []
+  const tableMatch = html.match(/<tbody>([\s\S]+?)<\/tbody>/)
+  if (!tableMatch) return []
 
-    for (const row of rows) {
-      const tr = row[1]
+  const rows = [...tableMatch[1].matchAll(/<tr>([\s\S]*?)<\/tr>/g)]
 
-      const titleMatch = tr.match(/<a href="\/view\/\d+"[^>]*>([^<]+)<\/a>/)
-      const magnetMatch = tr.match(/href="(magnet:\?xt=urn:[^"]+)"/)
-      const hashMatch = magnetMatch?.[1]?.match(/btih:([a-fA-F0-9]+)/)
-      const sizeMatch = tr.match(/<td class="text-center">([\d.]+)\s+(MiB|GiB|MB|GB)<\/td>/)
-      const dateMatch = tr.match(/data-timestamp="(\d+)"/)
-      const stats = [...tr.matchAll(/<td class="text-center">(\d+)<\/td>/g)]
-      const seeders = stats[stats.length - 2]?.[1]
-      const leechers = stats[stats.length - 1]?.[1]
+  for (const [, tr] of rows) {
+    const titleMatch = tr.match(/<a href="\/view\/\d+".*?>([^<]+)<\/a>/)
+    const magnetMatch = tr.match(/href="(magnet:\?xt=urn:[^"]+)"/)
+    const hashMatch = magnetMatch?.[1]?.match(/btih:([a-fA-F0-9]+)/)
+    const sizeMatch = tr.match(/<td class="text-center">([\d.]+)\s+(MiB|GiB|MB|GB)<\/td>/)
+    const dateMatch = tr.match(/data-timestamp="(\d+)"/)
+    const statMatches = [...tr.matchAll(/<td class="text-center">(\d+)<\/td>/g)]
+    const seeders = statMatches[statMatches.length - 2]?.[1]
+    const leechers = statMatches[statMatches.length - 1]?.[1]
 
-      if (!titleMatch || !magnetMatch || !hashMatch || !sizeMatch || !dateMatch || !seeders || !leechers) continue
+    if (!titleMatch || !magnetMatch || !hashMatch || !sizeMatch || !dateMatch || !seeders || !leechers) continue
 
-      const title = titleMatch[1]
-      const magnet = magnetMatch[1]
-      const hash = hashMatch[1]
-      const size = this.parseSize(sizeMatch[1], sizeMatch[2])
-      const date = new Date(parseInt(dateMatch[1]) * 1000)
-
-      results.push({
-        title,
-        link: magnet,
-        hash,
-        seeders: parseInt(seeders),
-        leechers: parseInt(leechers),
-        downloads: 0,
-        verified: false,
-        size,
-        date,
-        type: 'alt',
-        accuracy: 'high'
-      })
-    }
-
-    return results
+    results.push({
+      title: titleMatch[1],
+      link: magnetMatch[1],
+      hash: hashMatch[1],
+      seeders: parseInt(seeders),
+      leechers: parseInt(leechers),
+      downloads: 0,
+      size: this.parseSize(sizeMatch[1], sizeMatch[2]),
+      date: new Date(parseInt(dateMatch[1]) * 1000),
+      verified: false,
+      type: 'alt',
+      accuracy: 'high'
+    })
   }
+
+  return results
+}
+
 
   parseSize(value, unit) {
     const num = parseFloat(value)
