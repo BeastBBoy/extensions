@@ -62,7 +62,7 @@
 {
   "id": "1337x",
   "name": "1337x",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "torrent",
   "accuracy": "medium",
   "media": "sub",
