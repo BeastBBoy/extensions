@@ -47,7 +47,7 @@
   {
     "name": "NyaaSi",
     "id": "nyaasi",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "type": "torrent",
     "accuracy": "low",
     "ratio": 0,
@@ -62,7 +62,7 @@
   {
   "id": "PirateBay",
   "name": "piratebay",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "type": "torrent",
   "accuracy": "low",
   "media": "both",
