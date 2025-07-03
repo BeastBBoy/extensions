@@ -1,6 +1,6 @@
 import AbstractSource from './abstract.js'
 
-export default new class PirateBay extends AbstractSource {
+export default new class Nyaasi extends AbstractSource {
   base = 'https://torrent-search-api-livid.vercel.app/api/nyaasi/'
 
   /** @type {import('./').SearchFunction} */
