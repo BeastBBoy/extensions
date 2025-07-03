@@ -49,7 +49,7 @@
     "id": "nyaasi",
     "version": "0.0.5",
     "type": "torrent",
-    "accuracy": "high",
+    "accuracy": "low",
     "ratio": 0,
     "media": "sub",
     "languages": [
@@ -64,7 +64,7 @@
   "name": "piratebay",
   "version": "0.0.10",
   "type": "torrent",
-  "accuracy": "medium",
+  "accuracy": "low",
   "media": "both",
   "languages": [
     "US"
