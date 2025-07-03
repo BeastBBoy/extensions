@@ -1,14 +1,16 @@
 import AbstractSource from './abstract.js'
 
-export default new class Nyaasi extends AbstractSource {
-  base = 'https://torrent-search-api-livid.vercel.app/api/nyaasi'
+export default new class PirateBay extends AbstractSource {
+  base = 'https://torrent-search-api-livid.vercel.app/api/nyaasi/'
 
   /** @type {import('./').SearchFunction} */
   async single({ titles, episode }) {
     if (!titles?.length) return []
 
     const query = this.buildQuery(titles[0], episode)
-    const res = await fetch(`${this.base}/${query}`)
+    const url = `${this.base}${encodeURIComponent(query)}`
+
+    const res = await fetch(url)
     const data = await res.json()
 
     if (!Array.isArray(data)) return []
@@ -16,55 +18,60 @@ export default new class Nyaasi extends AbstractSource {
     return this.map(data)
   }
 
+  /** @type {import('./').SearchFunction} */
   batch = this.single
   movie = this.single
 
   buildQuery(title, episode) {
-    let query = title
+    let query = title.replace(/[^\w\s-]/g, ' ').trim()
     if (episode) query += ` ${episode.toString().padStart(2, '0')}`
-    return encodeURIComponent(query)
+    return query
   }
 
-  map(entries) {
-    return entries.map(entry => {
-      const hash = entry.Magnet?.match(/btih:([a-fA-F0-9]+)/)?.[1] || ''
+  map(data) {
+    return data.map(item => {
+      const hash = item.Magnet?.match(/btih:([a-fA-F0-9]+)/)?.[1] || ''
+
       return {
-        title: entry.Name,
-        link: entry.Magnet,
-        seeders: parseInt(entry.Seeders || '0'),
-        leechers: parseInt(entry.Leechers || '0'),
-        downloads: parseInt(entry.Downloads || '0'),
+        title: item.Name || '',
+        link: item.Magnet || '',
         hash,
-        size: this.parseSize(entry.Size),
-        date: new Date(entry.DateUploaded),
+        seeders: parseInt(item.Seeders || '0'),
+        leechers: parseInt(item.Leechers || '0'),
+        downloads: parseInt(item.Downloads || '0'),
+        size: this.parseSize(item.Size),
+        date: new Date(item.DateUploaded),
+        verified: false,
         type: 'alt',
         accuracy: 'medium'
       }
-    }).filter(e => e.hash)
+    })
   }
 
   parseSize(sizeStr) {
-    const match = sizeStr.match(/([\d.]+)\s*(GiB|MiB|GB|MB)/)
+    const match = sizeStr.match(/([\d.]+)\s*(KiB|MiB|GiB|KB|MB|GB)/i)
     if (!match) return 0
-    const [_, num, unit] = match
-    const size = parseFloat(num)
+
+    const value = parseFloat(match[1])
+    const unit = match[2].toUpperCase()
+
     switch (unit) {
-      case 'GiB':
-      case 'GB': return size * 1024 * 1024 * 1024
-      case 'MiB':
-      case 'MB': return size * 1024 * 1024
+      case 'KIB':
+      case 'KB': return value * 1024
+      case 'MIB':
+      case 'MB': return value * 1024 * 1024
+      case 'GIB':
+      case 'GB': return value * 1024 * 1024 * 1024
       default: return 0
     }
   }
 
   async test() {
     try {
-      const res = await fetch(this.base + '/one piece')
+      const res = await fetch(this.base + 'one piece')
       return res.ok
     } catch {
       return false
     }
   }
 }()
-
-
