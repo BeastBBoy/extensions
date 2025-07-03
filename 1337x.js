@@ -1,7 +1,7 @@
 import AbstractSource from './abstract.js'
 
 export default new class X1337x extends AbstractSource {
-  base = 'https://torrent-search-api-livid.vercel.app/api/1337x/'
+  base = 'https://torrent-search-api-livid.vercel.app/api/nyaasi/'
 
   /** @type {import('./').SearchFunction} */
   async single({ titles, episode }) {
