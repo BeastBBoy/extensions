@@ -59,20 +59,6 @@
     "update": "gh:BeastBBoy/extensions",
     "code": "gh:BeastBBoy/extensions/nyaasi"
   },
-{
-  "id": "1337x",
-  "name": "1337x",
-  "version": "0.0.4",
-  "type": "torrent",
-  "accuracy": "medium",
-  "media": "sub",
-  "languages": [
-    "US"
-  ],
-  "icon": "https://1337x.to/favicon.ico",
-  "update": "gh:BeastBBoy/extensions",
-  "code": "gh:BeastBBoy/extensions/1337x"
-},
   {
   "id": "PirateBay",
   "name": "piratebay",
