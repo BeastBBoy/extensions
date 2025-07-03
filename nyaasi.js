@@ -4,38 +4,48 @@ export default new class Nyaasi extends AbstractSource {
   base = 'https://torrent-search-api-livid.vercel.app/api/nyaasi/'
 
   /** @type {import('./').SearchFunction} */
-  async single({ titles, episode }) {
-    if (!titles?.length) return []
+  async single(query) {
+    const titles = query.titles || []
+    const episode = query.episode
 
-    const query = this.buildQuery(titles[0], episode)
-    const url = `${this.base}${encodeURIComponent(query)}`
+    if (!titles.length) {
+      return []
+    }
+
+    const title = titles[0]
+    const searchQuery = this.buildQuery(title, episode)
+    const url = this.base + encodeURIComponent(searchQuery)
 
     const res = await fetch(url)
     const data = await res.json()
 
-    if (!Array.isArray(data)) return []
+    if (!Array.isArray(data)) {
+      return []
+    }
 
     return this.map(data)
   }
 
-  /** @type {import('./').SearchFunction} */
   batch = this.single
   movie = this.single
 
   buildQuery(title, episode) {
-    let query = title.replace(/[^\w\s-]/g, ' ').trim()
-    if (episode) query += ` ${episode.toString().padStart(2, '0')}`
-    return query
+    let clean = title.replace(/[^\w\s-]/g, ' ').trim()
+    if (episode) {
+      clean += ' ' + episode.toString().padStart(2, '0')
+    }
+    return clean
   }
 
-  map(data) {
-    return data.map(item => {
-      const hash = item.Magnet?.match(/btih:([a-fA-F0-9]+)/)?.[1] || ''
+  map(results) {
+    return results.map(item => {
+      const hashMatch = item.Magnet && item.Magnet.match(/btih:([a-fA-F0-9]+)/)
+      const hash = hashMatch ? hashMatch[1] : ''
 
       return {
         title: item.Name || '',
         link: item.Magnet || '',
-        hash,
+        hash: hash,
         seeders: parseInt(item.Seeders || '0'),
         leechers: parseInt(item.Leechers || '0'),
         downloads: parseInt(item.Downloads || '0'),
@@ -49,7 +59,7 @@ export default new class Nyaasi extends AbstractSource {
   }
 
   parseSize(sizeStr) {
-    const match = sizeStr.match(/([\d.]+)\s*(KiB|MiB|GiB|KB|MB|GB)/i)
+    const match = /([\d.]+)\s*(KiB|MiB|GiB|KB|MB|GB)/i.exec(sizeStr)
     if (!match) return 0
 
     const value = parseFloat(match[1])
@@ -67,11 +77,8 @@ export default new class Nyaasi extends AbstractSource {
   }
 
   async test() {
-    try {
-      const res = await fetch(this.base + 'jujutsu kaisen')
-      return res.ok
-    } catch {
-      return false
-    }
+    const res = await fetch(this.base + 'jujutsu kaisen')
+    return res.ok
   }
 }()
+
